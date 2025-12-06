@@ -1,0 +1,16 @@
+{
+  "name": "BYTIAS",
+  "short_name": "BYTIAS",
+  "description": "Discover our latest conscious collection. Ethically sourced, beautifully designed.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#6610F2",
+  "icons": [
+    {
+      "src": "https://services-ec.github.io/ecommerce-store-1/images/bytias-logo.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ]
+}
