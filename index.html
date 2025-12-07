@@ -117,20 +117,22 @@ const iframeId = 'my-apps-script-content';
         }
     }
 
-    // 1. Listen for clicks *from* the iframe (User clicks a button)
-    window.addEventListener('message', (event) => {
+window.addEventListener('message', (event) => {
+    
+    // 🚨 FINAL, MOST RELIABLE FIX: ONLY check for the expected data payload.
+    // This ignores all unpredictable origin/source issues coming from the Apps Script iframe.
+    
+    if (event.data && event.data.action === 'iframeNavigate' && event.data.pageId) {
         
-        // 🚨 FINAL FIX: Only check for the expected data payload. 
-        // This stops the browser from dropping the message due to the strict origin check.
-        if (event.data && event.data.action === 'iframeNavigate' && event.data.pageId) {
-            
-            const pageId = event.data.pageId;
-            
-            // This is the CRITICAL line that updates the URL!
-            history.pushState(null, pageId, `#${pageId}`);
-            console.log(`Parent: Updated history hash to #${pageId}`);
-        }
-    });
+        const pageId = event.data.pageId;
+        
+        // This is the CRITICAL line that updates the URL and fixes the back button!
+        // It runs immediately if the data payload is correct, ignoring security drops.
+        history.pushState(null, pageId, `#${pageId}`);
+        console.log(`Parent: Updated history hash to #${pageId}`);
+    }
+    // Note: No 'else' or 'return' or security checks are performed here.
+});
 
     // 2. Listen for the browser's Back/Forward button clicks (popstate)
     window.addEventListener('popstate', () => {
@@ -160,6 +162,7 @@ const iframeId = 'my-apps-script-content';
 
 
 </html>
+
 
 
 
