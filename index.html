@@ -109,25 +109,24 @@ const iframeId = 'my-apps-script-content';
     // --- Helper function to send command *to* the iframe ---
     function navigateIframe(pageId) {
         if (iframeElement && iframeElement.contentWindow) {
-            // Using '*' as the target origin is generally fine when communicating
-            // with an embedded iframe you control.
+            // Sends a message to the iframe asking it to show the specified pageId
             iframeElement.contentWindow.postMessage({ 
                 action: 'parentNavigated', 
                 pageId: pageId 
-            }, '*'); 
+            }, '*'); // '*' allows sending to any origin (the iframe's unpredictable Google origin)
             console.log(`Parent: Sent command to iframe to show page: #${pageId}`);
         }
     }
 
     // 1. Listen for clicks *from* the iframe (User clicks a button)
     window.addEventListener('message', (event) => {
-        // 🚨 FIX: Rely on the specific data payload and origin structure (Google)
         
-        // Check for the specific action and pageId data payload
+        // Check for the specific action and pageId data payload 
         if (event.data && event.data.action === 'iframeNavigate' && event.data.pageId) {
              
-            // Check if the origin is a Google host (This helps reject malicious external scripts)
-            if (event.origin.includes('.googleusercontent.com') || event.origin.includes('script.google.com')) {
+            // 🚨 FIX: Check if the origin looks like a Google host to ensure security
+            // This is the most permissive and reliable check for Apps Script origins.
+            if (event.origin.endsWith('.googleusercontent.com') || event.origin.endsWith('.google.com')) {
                 const pageId = event.data.pageId;
                 
                 // Update the URL hash and create a new history entry (Fixes the back button)
@@ -142,7 +141,7 @@ const iframeId = 'my-apps-script-content';
     // 2. Listen for the browser's Back/Forward button clicks (popstate)
     window.addEventListener('popstate', () => {
         // Get the current page ID from the URL hash
-        const pageId = location.hash.substring(1) || 'home'; // 'home' is your default page ID
+        const pageId = location.hash.substring(1) || 'page1'; // 'home' is your default page ID
         
         // Tell the iframe what page to switch to
         navigateIframe(pageId);
@@ -151,17 +150,18 @@ const iframeId = 'my-apps-script-content';
     
     // 3. Initial Load Fix: Handle direct links or page refresh
     document.addEventListener('DOMContentLoaded', () => {
-        const pageId = location.hash.substring(1) || 'home';
+        const pageId = location.hash.substring(1) || 'page1';
         
         // Wait for the iframe to fully load before sending the initial command
         if (iframeElement) {
+            // Use 'onload' to ensure the iframe's contentWindow is ready
             iframeElement.onload = () => {
                 navigateIframe(pageId);
                 console.log(`Parent: Initial load complete, told iframe to show: #${pageId}`);
             };
-            // For cases where the iframe is already loaded (e.g., cached in the browser),
-            // manually trigger the initial state check.
-            if (iframeElement.contentWindow) {
+            
+            // For cases where the iframe might be loaded/cached, check immediately
+            if (iframeElement.contentWindow && iframeElement.contentWindow.document.readyState === 'complete') {
                  navigateIframe(pageId);
             }
         }
@@ -172,6 +172,7 @@ const iframeId = 'my-apps-script-content';
 
 
 </html>
+
 
 
 
