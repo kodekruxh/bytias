@@ -74,7 +74,7 @@
 </head>
 
 <body style="overflow:hidden; margin: 0px;">
-	<iframe src="https://script.google.com/macros/s/AKfycbzvACweJTK3LXGfvbs-spPktUdSFLhriQc_VvdjfB8iAhGypdf5LXpJ9EHABgp2LqOwqA/exec" frameborder="0" allowfullscreen style="overflow:hidden; height: 100vh; width: 100vw;" id="my-apps-script-content">
+	<iframe src="https://script.google.com/macros/s/AKfycbxWCVhUE5C1ut1ifiVSOH7GUwz1--EA-UA_84lvXKLAM60t-Daa1dRY5e4ueIpZAUeYpA/exec" frameborder="0" allowfullscreen style="overflow:hidden; height: 100vh; width: 100vw;" id="my-apps-script-content">
 	</iframe>
 
 
@@ -109,11 +109,10 @@ const iframeId = 'my-apps-script-content';
     // --- Helper function to send command *to* the iframe ---
     function navigateIframe(pageId) {
         if (iframeElement && iframeElement.contentWindow) {
-            // Sends a message to the iframe asking it to show the specified pageId
             iframeElement.contentWindow.postMessage({ 
                 action: 'parentNavigated', 
                 pageId: pageId 
-            }, '*'); // '*' allows sending to any origin (the iframe's unpredictable Google origin)
+            }, '*'); 
             console.log(`Parent: Sent command to iframe to show page: #${pageId}`);
         }
     }
@@ -121,46 +120,35 @@ const iframeId = 'my-apps-script-content';
     // 1. Listen for clicks *from* the iframe (User clicks a button)
     window.addEventListener('message', (event) => {
         
-        // Check for the specific action and pageId data payload 
+        // 🚨 FINAL FIX: Only check for the expected data payload. 
+        // This stops the browser from dropping the message due to the strict origin check.
         if (event.data && event.data.action === 'iframeNavigate' && event.data.pageId) {
-             
-            // 🚨 FIX: Check if the origin looks like a Google host to ensure security
-            // This is the most permissive and reliable check for Apps Script origins.
-            if (event.origin.endsWith('.googleusercontent.com') || event.origin.endsWith('.google.com')) {
-                const pageId = event.data.pageId;
-                
-                // Update the URL hash and create a new history entry (Fixes the back button)
-                history.pushState(null, pageId, `#${pageId}`);
-                console.log(`Parent: Updated history hash to #${pageId}`);
-            } else {
-                 console.warn("Parent: Ignoring message from non-Google origin:", event.origin);
-            }
+            
+            const pageId = event.data.pageId;
+            
+            // This is the CRITICAL line that updates the URL!
+            history.pushState(null, pageId, `#${pageId}`);
+            console.log(`Parent: Updated history hash to #${pageId}`);
         }
     });
 
     // 2. Listen for the browser's Back/Forward button clicks (popstate)
     window.addEventListener('popstate', () => {
-        // Get the current page ID from the URL hash
-        const pageId = location.hash.substring(1) || 'page1'; // 'home' is your default page ID
-        
-        // Tell the iframe what page to switch to
+        const pageId = location.hash.substring(1) || 'home'; 
         navigateIframe(pageId);
         console.log(`Parent: Browser navigation detected, asking iframe to show: #${pageId}`);
     });
     
     // 3. Initial Load Fix: Handle direct links or page refresh
     document.addEventListener('DOMContentLoaded', () => {
-        const pageId = location.hash.substring(1) || 'page1';
+        const pageId = location.hash.substring(1) || 'home';
         
-        // Wait for the iframe to fully load before sending the initial command
         if (iframeElement) {
-            // Use 'onload' to ensure the iframe's contentWindow is ready
             iframeElement.onload = () => {
                 navigateIframe(pageId);
                 console.log(`Parent: Initial load complete, told iframe to show: #${pageId}`);
             };
             
-            // For cases where the iframe might be loaded/cached, check immediately
             if (iframeElement.contentWindow && iframeElement.contentWindow.document.readyState === 'complete') {
                  navigateIframe(pageId);
             }
@@ -172,6 +160,7 @@ const iframeId = 'my-apps-script-content';
 
 
 </html>
+
 
 
 
