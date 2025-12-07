@@ -74,7 +74,7 @@
 </head>
 
 <body style="overflow:hidden; margin: 0px;">
-	<iframe src="https://script.google.com/macros/s/AKfycbyxo9WCQG6x0hua-2D2n_jSZdHkzcw6ql1w3ZDe5SIa7FdmRYPnwURXqgodZKAsNYW4zQ/exec" frameborder="0" allowfullscreen style="overflow:hidden; height: 100vh; width: 100vw;" id="my-apps-script-content">
+	<iframe src="https://script.google.com/macros/s/AKfycbywDbBfc3Lp6vdmbx9T_TWZ6xKCbKuPi4CL8NAhaaKOwpQiydzFm9gNgdUVKel2wnqPog/exec" frameborder="0" allowfullscreen style="overflow:hidden; height: 100vh; width: 100vw;" id="my-apps-script-content">
 	</iframe>
 
 
@@ -101,67 +101,12 @@
 
 
 
-
-
-const iframeId = 'my-apps-script-content';
-    const iframeElement = document.getElementById(iframeId);
-    
-    // --- Helper function to send command *to* the iframe ---
-    function navigateIframe(pageId) {
-        if (iframeElement && iframeElement.contentWindow) {
-            iframeElement.contentWindow.postMessage({ 
-                action: 'parentNavigated', 
-                pageId: pageId 
-            }, '*'); 
-            console.log(`Parent: Sent command to iframe to show page: #${pageId}`);
-        }
-    }
-
-window.addEventListener('message', (event) => {
-    
-    // 🚨 FINAL, MOST RELIABLE FIX: ONLY check for the expected data payload.
-    // This ignores all unpredictable origin/source issues coming from the Apps Script iframe.
-    
-    if (event.data && event.data.action === 'iframeNavigate' && event.data.pageId) {
-        
-        const pageId = event.data.pageId;
-        
-        // This is the CRITICAL line that updates the URL and fixes the back button!
-        // It runs immediately if the data payload is correct, ignoring security drops.
-        history.pushState(null, pageId, `#${pageId}`);
-        console.log(`Parent: Updated history hash to #${pageId}`);
-    }
-    // Note: No 'else' or 'return' or security checks are performed here.
-});
-
-    // 2. Listen for the browser's Back/Forward button clicks (popstate)
-    window.addEventListener('popstate', () => {
-        const pageId = location.hash.substring(1) || 'home'; 
-        navigateIframe(pageId);
-        console.log(`Parent: Browser navigation detected, asking iframe to show: #${pageId}`);
-    });
-    
-    // 3. Initial Load Fix: Handle direct links or page refresh
-    document.addEventListener('DOMContentLoaded', () => {
-        const pageId = location.hash.substring(1) || 'home';
-        
-        if (iframeElement) {
-            iframeElement.onload = () => {
-                navigateIframe(pageId);
-                console.log(`Parent: Initial load complete, told iframe to show: #${pageId}`);
-            };
-            
-            if (iframeElement.contentWindow && iframeElement.contentWindow.document.readyState === 'complete') {
-                 navigateIframe(pageId);
-            }
-        }
-    });
-
 </script>
 </body>
 
 
 </html>
+
 
 
 
