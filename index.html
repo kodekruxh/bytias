@@ -106,38 +106,47 @@
 const iframeId = 'my-apps-script-content';
     const iframeElement = document.getElementById(iframeId);
     
-    // --- Helper function to send command to the iframe ---
+    // --- Helper function to send command *to* the iframe ---
     function navigateIframe(pageId) {
         if (iframeElement && iframeElement.contentWindow) {
             iframeElement.contentWindow.postMessage({ 
-                action: 'parentNavigated', // Action the iframe will look for
+                action: 'parentNavigated', 
                 pageId: pageId 
-            }, '*'); // '*' allows communication with any origin (use a specific origin for better security if possible)
+            }, '*'); 
+            console.log(`Parent: Sent command to iframe to show page: #${pageId}`);
         }
     }
 
-    // --- 1. Listen for clicks *from* the iframe (when user clicks a button) ---
+    // 1. Listen for clicks *from* the iframe (User clicks a button)
     window.addEventListener('message', (event) => {
-        // Check if the message is the navigation command from your iframe
+        // 🚨 CRITICAL FIX: Verify the message came from *your* iframe element
+        if (event.source !== iframeElement.contentWindow) {
+             // Drop the message if it didn't come from the expected iframe
+             console.warn("Parent: Message source mismatch. Dropping message.");
+             return; 
+        }
+
+        // Check for the navigation command payload
         if (event.data && event.data.action === 'iframeNavigate') {
             const pageId = event.data.pageId;
             
-            // This updates the URL hash and creates a new history entry.
-            // This is what makes the mobile back button work!
-            history.pushState(null, '', `#${pageId}`);
+            // Update the URL hash and create a new history entry (This fixes the back button)
+            history.pushState(null, pageId, `#${pageId}`);
+            console.log(`Parent: Updated history hash to #${pageId}`);
         }
     });
 
-    // --- 2. Listen for the browser's Back/Forward button clicks (popstate) ---
+    // 2. Listen for the browser's Back/Forward button clicks (popstate)
     window.addEventListener('popstate', () => {
         // Get the current page ID from the URL hash
         const pageId = location.hash.substring(1) || 'home'; // 'home' is your default page ID
         
         // Tell the iframe what page to switch to
         navigateIframe(pageId);
+        console.log(`Parent: Browser navigation detected, asking iframe to show: #${pageId}`);
     });
     
-    // --- 3. Initial Load Fix: Handle direct links or page refresh ---
+    // 3. Initial Load Fix: Handle direct links or page refresh
     document.addEventListener('DOMContentLoaded', () => {
         const pageId = location.hash.substring(1) || 'home';
         
@@ -145,6 +154,7 @@ const iframeId = 'my-apps-script-content';
         if (iframeElement) {
             iframeElement.onload = () => {
                 navigateIframe(pageId);
+                console.log(`Parent: Initial load complete, told iframe to show: #${pageId}`);
             };
         }
     });
@@ -155,6 +165,7 @@ const iframeId = 'my-apps-script-content';
 
 
 </html>
+
 
 
 
