@@ -4,7 +4,7 @@
   "description": "Discover our latest conscious collection. Ethically sourced, beautifully designed.",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#ffffff",
+  "background_color": "#212529",
   "theme_color": "#6610F2",
   "icons": [
     {
