@@ -74,7 +74,7 @@
 </head>
 
 <body style="overflow:hidden; margin: 0px;">
-	<iframe src="https://script.google.com/macros/s/AKfycbz81JlEocGch3-ZYULz59Rrm0KR2P3AWvS7LJIG7kfYTcqqJFzDGqkN8IpCSMEFLniZBA/exec" frameborder="0" allowfullscreen style="overflow:hidden; height: 100vh; width: 100vw;" id="my-apps-script-content">
+	<iframe src="https://script.google.com/macros/s/AKfycbxURp37gNrR5outBKK-i7E25AbeILTXBCtsuTYCZuYb66xM3AllICQnupv2NQU1VkQhMQ/exec" frameborder="0" allowfullscreen style="overflow:hidden; height: 100vh; width: 100vw;" id="my-apps-script-content">
 	</iframe>
 
 
@@ -109,6 +109,8 @@ const iframeId = 'my-apps-script-content';
     // --- Helper function to send command *to* the iframe ---
     function navigateIframe(pageId) {
         if (iframeElement && iframeElement.contentWindow) {
+            // Using '*' as the target origin is generally fine when communicating
+            // with an embedded iframe you control.
             iframeElement.contentWindow.postMessage({ 
                 action: 'parentNavigated', 
                 pageId: pageId 
@@ -119,20 +121,21 @@ const iframeId = 'my-apps-script-content';
 
     // 1. Listen for clicks *from* the iframe (User clicks a button)
     window.addEventListener('message', (event) => {
-        // 🚨 CRITICAL FIX: Verify the message came from *your* iframe element
-        if (event.source !== iframeElement.contentWindow) {
-             // Drop the message if it didn't come from the expected iframe
-             console.warn("Parent: Message source mismatch. Dropping message.");
-             return; 
-        }
-
-        // Check for the navigation command payload
-        if (event.data && event.data.action === 'iframeNavigate') {
-            const pageId = event.data.pageId;
-            
-            // Update the URL hash and create a new history entry (This fixes the back button)
-            history.pushState(null, pageId, `#${pageId}`);
-            console.log(`Parent: Updated history hash to #${pageId}`);
+        // 🚨 FIX: Rely on the specific data payload and origin structure (Google)
+        
+        // Check for the specific action and pageId data payload
+        if (event.data && event.data.action === 'iframeNavigate' && event.data.pageId) {
+             
+            // Check if the origin is a Google host (This helps reject malicious external scripts)
+            if (event.origin.includes('.googleusercontent.com') || event.origin.includes('script.google.com')) {
+                const pageId = event.data.pageId;
+                
+                // Update the URL hash and create a new history entry (Fixes the back button)
+                history.pushState(null, pageId, `#${pageId}`);
+                console.log(`Parent: Updated history hash to #${pageId}`);
+            } else {
+                 console.warn("Parent: Ignoring message from non-Google origin:", event.origin);
+            }
         }
     });
 
@@ -156,15 +159,20 @@ const iframeId = 'my-apps-script-content';
                 navigateIframe(pageId);
                 console.log(`Parent: Initial load complete, told iframe to show: #${pageId}`);
             };
+            // For cases where the iframe is already loaded (e.g., cached in the browser),
+            // manually trigger the initial state check.
+            if (iframeElement.contentWindow) {
+                 navigateIframe(pageId);
+            }
         }
     });
-
 
 </script>
 </body>
 
 
 </html>
+
 
 
 
