@@ -74,7 +74,7 @@
 </head>
 
 <body style="overflow:hidden; margin: 0px;">
-	<iframe src="https://script.google.com/macros/s/AKfycbwKtJ50BHUivkS8daQn0N4X_IWWFbDo_wKB1eO8Ue2Xcr65Mbj2n5pgUl65XQTMU4Vi/exec" frameborder="0" allowfullscreen style="overflow:hidden; height: 100vh; width: 100vw;" >
+	<iframe src="https://script.google.com/macros/s/AKfycbz81JlEocGch3-ZYULz59Rrm0KR2P3AWvS7LJIG7kfYTcqqJFzDGqkN8IpCSMEFLniZBA/exec" frameborder="0" allowfullscreen style="overflow:hidden; height: 100vh; width: 100vw;" id="my-apps-script-content">
 	</iframe>
 
 
@@ -100,11 +100,62 @@
 
 
 
+
+
+
+const iframeId = 'my-apps-script-content';
+    const iframeElement = document.getElementById(iframeId);
+    
+    // --- Helper function to send command to the iframe ---
+    function navigateIframe(pageId) {
+        if (iframeElement && iframeElement.contentWindow) {
+            iframeElement.contentWindow.postMessage({ 
+                action: 'parentNavigated', // Action the iframe will look for
+                pageId: pageId 
+            }, '*'); // '*' allows communication with any origin (use a specific origin for better security if possible)
+        }
+    }
+
+    // --- 1. Listen for clicks *from* the iframe (when user clicks a button) ---
+    window.addEventListener('message', (event) => {
+        // Check if the message is the navigation command from your iframe
+        if (event.data && event.data.action === 'iframeNavigate') {
+            const pageId = event.data.pageId;
+            
+            // This updates the URL hash and creates a new history entry.
+            // This is what makes the mobile back button work!
+            history.pushState(null, '', `#${pageId}`);
+        }
+    });
+
+    // --- 2. Listen for the browser's Back/Forward button clicks (popstate) ---
+    window.addEventListener('popstate', () => {
+        // Get the current page ID from the URL hash
+        const pageId = location.hash.substring(1) || 'home'; // 'home' is your default page ID
+        
+        // Tell the iframe what page to switch to
+        navigateIframe(pageId);
+    });
+    
+    // --- 3. Initial Load Fix: Handle direct links or page refresh ---
+    document.addEventListener('DOMContentLoaded', () => {
+        const pageId = location.hash.substring(1) || 'home';
+        
+        // Wait for the iframe to fully load before sending the initial command
+        if (iframeElement) {
+            iframeElement.onload = () => {
+                navigateIframe(pageId);
+            };
+        }
+    });
+
+
 </script>
 </body>
 
 
 </html>
+
 
 
 
